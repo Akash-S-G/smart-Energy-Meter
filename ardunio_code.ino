@@ -15,7 +15,7 @@ TFT_22_ILI9225 tft = TFT_22_ILI9225(TFT_RST, TFT_RS, TFT_CS, TFT_SDI, TFT_CLK, T
 #define CURRENT_SENSOR_PIN A1  // ACS712 connected here
 
 // Calibration Constants (ADJUST THESE FOR YOUR SENSORS!)
-const float VOLTAGE_CALIBRATION = 0.178; // Calibration factor for voltage sensor
+const float VOLTAGE_CALIBRATION = .00187; // Calibration factor for voltage sensor
 const float CURRENT_CALIBRATION = 0.100; // Calibration factor for current sensor (0.1 for 20A model)
 const float VCC = 5.0;                   // Arduino reference voltage
 const int ADC_RESOLUTION = 1023;         // 10-bit ADC

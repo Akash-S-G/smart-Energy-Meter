@@ -200,57 +200,70 @@ app.get('/api/dashboard-data', (req, res) => {
         hourlyUsageData,
         aiInsights: aiSuggestions,
         quickTips: [
-            { id: 1, text: "Switch to Off-Peak", subText: "Run dishwasher after 10 PM", savings: 25 },
-            { id: 2, text: "AC Temperature", subText: "Increase AC to 25°C", savings: 80 },
-            { id: 3, text: "Load Balancing", subText: "Avoid using multiple high-power appliances together", savings: 50 }
-        ]
+            { id: 1, title: "Optimize AC Usage", message: "Set your AC to 26°C for optimal savings. Each degree lower can increase consumption by 5%." },
+            { id: 2, title: "Unplug Idle Devices", message: "Phantom load from chargers and idle electronics can add up. Unplug them when not in use." },
+            { id: 3, title: "LED Lighting", message: "Switch to LED bulbs. They use up to 80% less energy than incandescent bulbs and last longer." },
+            { id: 4, title: "Peak Hour Awareness", message: "Reduce heavy appliance use during peak hours (6-10 AM, 6-10 PM) to avoid higher tariffs." },
+            { id: 5, title: "Regular Maintenance", message: "Clean refrigerator coils and AC filters regularly to improve efficiency and reduce energy consumption." },
+        ],
+        currentVoltage: currentVoltageRMS,
+        currentCurrent: currentCurrentRMS
     });
 });
 
 // Endpoint for the Analytics page to fetch data
 app.get('/api/analytics-data', (req, res) => {
-    const weeklyUsage = 524.1;
-    const weeklyUsageChange = 9.6;
-    const weeklyCost = 3310;
-    const avgDailyCost = 473;
-    const monthlyTrendValue = 4726;
-    const monthlyTrendChange = 3.4;
-    const efficiencyScore = 73;
+    // Dummy data for analytics
+    const dailyUsageData = [
+        { date: "2024-06-01", usage: 15.2 },
+        { date: "2024-06-02", usage: 14.8 },
+        { date: "2024-06-03", usage: 16.1 },
+        { date: "2024-06-04", usage: 13.5 },
+        { date: "2024-06-05", usage: 15.9 },
+        { date: "2024-06-06", usage: 17.0 },
+        { date: "2024-06-07", usage: 14.5 },
+    ];
 
-    const usageTrendsData = [
-        { name: "Jan", "Energy Usage": 65, "Cost Breakdown": 30 },
-        { name: "Feb", "Energy Usage": 70, "Cost Breakdown": 35 },
-        { name: "Mar", "Energy Usage": 60, "Cost Breakdown": 28 },
-        { name: "Apr", "Energy Usage": 75, "Cost Breakdown": 40 },
-        { name: "May", "Energy Usage": 80, "Cost Breakdown": 42 },
-        { name: "Jun", "Energy Usage": 78, "Cost Breakdown": 38 },
+    const weeklyTrendData = [
+        { week: "Week 1", usage: 105 },
+        { week: "Week 2", usage: 98 },
+        { week: "Week 3", usage: 112 },
+        { week: "Week 4", usage: 100 },
+    ];
+
+    const monthlyTrendData = [
+        { month: "Jan", usage: 450 },
+        { month: "Feb", usage: 420 },
+        { month: "Mar", usage: 480 },
+        { month: "Apr", usage: 460 },
+        { month: "May", usage: 490 },
+        { month: "Jun", usage: 470 },
     ];
 
     const deviceUsageData = [
-        { name: "Air Conditioner", value: 35, kwh: 33.7, amount: 277, color: "#EF4444" },
-        { name: "Water Heater", value: 15, kwh: 16.6, amount: 115, color: "#F97316" },
-        { name: "Refrigerator", value: 12, kwh: 13.1, amount: 106, color: "#F59E0B" },
-        { name: "Washing Machine", value: 8, kwh: 7.2, amount: 68, color: "#10B981" },
-        { name: "TV & Electronics", value: 6, kwh: 4.3, amount: 39, color: "#3B82F6" },
-        { name: "Lights & Fans", value: 10, kwh: 9.2, amount: 73, color: "#6366F1" },
-        { name: "Other Appliances", value: 14, kwh: 11.6, amount: 115, color: "#8B5CF6" },
+        { name: "AC", value: 45 },
+        { name: "Refrigerator", value: 20 },
+        { name: "Geyser", value: 15 },
+        { name: "Lighting", value: 10 },
+        { name: "Others", value: 10 },
     ];
 
     const tariffDistributionData = [
-        { name: "Off-Peak", value: 3.5 },
-        { name: "Normal", value: 5.5 },
-        { name: "Peak", value: 9.0 },
+        { name: "Peak (₹7/kWh)", value: 30 },
+        { name: "Normal (₹5/kWh)", value: 50 },
+        { name: "Off-Peak (₹3.5/kWh)", value: 20 },
     ];
 
     res.json({
-        weeklyUsage,
-        weeklyUsageChange,
-        weeklyCost,
-        avgDailyCost,
-        monthlyTrendValue,
-        monthlyTrendChange,
-        efficiencyScore,
-        usageTrendsData,
+        summary: {
+            totalConsumption: 480,
+            averageDaily: 16,
+            peakDemand: 7.5,
+            costSavings: 85,
+        },
+        dailyUsageData,
+        weeklyTrendData,
+        monthlyTrendData,
         deviceUsageData,
         tariffDistributionData,
     });
@@ -259,47 +272,54 @@ app.get('/api/analytics-data', (req, res) => {
 // Endpoint for the Billing page to fetch data
 app.get('/api/billing-data', (req, res) => {
     const currentBill = {
-        month: "Jun 2025",
-        kWhUsed: 839,
-        totalAmount: 4757,
-        avgRate: 5.7,
-        breakdown: {
-            peak: { amount: 2207, kWh: 245, rate: 9 },
-            normal: { amount: 1296, kWh: 236, rate: 5.5 },
-            offPeak: { amount: 1254, kWh: 358, rate: 3.5 },
+        period: "June 1, 2024 - June 30, 2024",
+        dueDate: "July 15, 2024",
+        totalAmount: 1850.75,
+        consumption: 308,
+        status: "Unpaid",
+        details: [
+            { description: "Energy Consumption (308 kWh)", amount: 1694.00 },
+            { description: "Fixed Charges", amount: 100.00 },
+            { description: "Taxes & Duties", amount: 56.75 },
+        ],
+    };
+
+    const pastBills = [
+        {
+            id: "bill-2024-05",
+            period: "May 1, 2024 - May 31, 2024",
+            totalAmount: 1720.50,
+            status: "Paid",
+            dueDate: "June 15, 2024",
         },
-        additionalCharges: [],
-    };
-
-    const paymentSummary = {
-        thisMonth: 4757,
-        lastMonth: 4693,
-        sixMonthAverage: 4727,
-        totalPaidSixMonths: 23604,
-    };
-
-    const paymentHistory = [
-        { month: "May 2025", dueDate: "15th of next month", status: "Pending", amount: 4693, variant: "destructive" },
-        { month: "Jan 2025", paidDate: "12/15/2024", status: "Paid", amount: 5549, variant: "success" },
-        { month: "Feb 2025", paidDate: "11/15/2024", status: "Paid", amount: 4502, variant: "success" },
-        { month: "Mar 2025", paidDate: "10/15/2024", status: "Paid", amount: 4837, variant: "success" },
-        { month: "Apr 2025", paidDate: "9/15/2024", status: "Paid", amount: 4024, variant: "success" },
-    ];
-
-    const monthlyBillsHistory = [
-        { month: "Jan 2025", kwh: 885, total: 4611, peak: 1459, normal: 1709, offPeak: 1443 },
-        { month: "Feb 2025", kwh: 980, total: 5215, peak: 1827, normal: 1836, offPeak: 1552 },
-        { month: "Mar 2025", kwh: 920, total: 4776, peak: 1835, normal: 1194, offPeak: 1748 },
-        { month: "Apr 2025", kwh: 778, total: 4053, peak: 1405, normal: 1146, offPeak: 1502 },
-        { month: "May 2025", kwh: 970, total: 5214, peak: 2045, normal: 1567, offPeak: 1603 },
-        { month: "Jun 2025", kwh: 923, total: 5143, peak: 2222, normal: 1524, offPeak: 1397 },
+        {
+            id: "bill-2024-04",
+            period: "April 1, 2024 - April 30, 2024",
+            totalAmount: 1680.00,
+            status: "Paid",
+            dueDate: "May 15, 2024",
+        },
+        {
+            id: "bill-2024-03",
+            period: "March 1, 2024 - March 31, 2024",
+            totalAmount: 1950.25,
+            status: "Paid",
+            dueDate: "April 15, 2024",
+        },
     ];
 
     res.json({
         currentBill,
-        paymentSummary,
-        paymentHistory,
-        monthlyBillsHistory,
+        pastBills,
+        paymentOptions: [
+            { name: "Credit/Debit Card", icon: "💳" },
+            { name: "Net Banking", icon: "🏦" },
+            { name: "UPI", icon: "📱" },
+        ],
+        alerts: [
+            "Your bill for June is due on July 15, 2024. Total amount: ₹1850.75.",
+            "Enroll in Auto-Pay for hassle-free payments and a chance to win a smart speaker!"
+        ]
     });
 });
 

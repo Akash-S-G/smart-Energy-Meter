@@ -21,7 +21,9 @@ const Index = () => {
     monthlyCostChange: 0,
     hourlyUsageData: [],
     aiInsights: [],
-    quickTips: []
+    quickTips: [],
+    currentVoltage: 0,
+    currentCurrent: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -58,7 +60,7 @@ const Index = () => {
   }
 
   // Destructure data from state for easier access
-  const { currentUsage, todayUsage, todayProjected, spentSoFar, currentTariffRate, projectedMonthlyCost, monthlyCostChange, hourlyUsageData, aiInsights, quickTips } = dashboardData;
+  const { currentUsage, todayUsage, todayProjected, spentSoFar, currentTariffRate, projectedMonthlyCost, monthlyCostChange, hourlyUsageData, aiInsights, quickTips, currentVoltage, currentCurrent } = dashboardData;
 
   // Find the specific AI insights based on type for display
   const monthlyBillPrediction = aiInsights.find(tip => tip.type === 'monthly-bill-prediction');
@@ -85,6 +87,34 @@ const Index = () => {
               <span className="text-green-500">●</span> Off-Peak Rate ₹3.5/kWh
             </p>
             <p className="text-xs text-muted-foreground">₹{ (currentUsage * 3.5).toFixed(2) }/hour</p>
+            <p className="text-xs text-muted-foreground mt-2">Last updated: {new Date().toLocaleTimeString()}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Current Voltage</CardTitle>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4 text-muted-foreground">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L13.5 21.75l1.5-4.5H3.75z" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{typeof currentVoltage === 'number' ? currentVoltage.toFixed(2) : 'N/A'} V</div>
+            <p className="text-xs text-muted-foreground mt-1">Live reading from sensor</p>
+            <p className="text-xs text-muted-foreground mt-2">Last updated: {new Date().toLocaleTimeString()}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Current Current</CardTitle>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4 text-muted-foreground">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 7.5l-6 6m0 0l6 6m-6-6h15m-15 0a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0z" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{typeof currentCurrent === 'number' ? currentCurrent.toFixed(2) : 'N/A'} mA</div>
+            <p className="text-xs text-muted-foreground mt-1">Live reading from sensor</p>
             <p className="text-xs text-muted-foreground mt-2">Last updated: {new Date().toLocaleTimeString()}</p>
           </CardContent>
         </Card>
