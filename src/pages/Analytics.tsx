@@ -10,14 +10,15 @@ import { API_BASE_URL } from '@/config';
 
 const Analytics = () => {
   const [analyticsData, setAnalyticsData] = useState({
-    weeklyUsage: 0,
-    weeklyUsageChange: 0,
-    weeklyCost: 0,
-    avgDailyCost: 0,
-    monthlyTrendValue: 0,
-    monthlyTrendChange: 0,
-    efficiencyScore: 0,
-    usageTrendsData: [],
+    summary: {
+      totalConsumption: 0,
+      averageDaily: 0,
+      peakDemand: 0,
+      costSavings: 0,
+    },
+    dailyUsageData: [],
+    weeklyTrendData: [],
+    monthlyTrendData: [],
     deviceUsageData: [],
     tariffDistributionData: []
   });
@@ -55,20 +56,16 @@ const Analytics = () => {
     return <div className="container mx-auto p-6 text-center text-red-500">Error loading analytics: {error.message}</div>;
   }
 
-  const { weeklyUsage, weeklyUsageChange, weeklyCost, avgDailyCost, monthlyTrendValue, monthlyTrendChange, efficiencyScore, usageTrendsData, deviceUsageData, tariffDistributionData } = analyticsData;
+  const { summary, dailyUsageData, weeklyTrendData, monthlyTrendData, deviceUsageData, tariffDistributionData } = analyticsData;
 
-  const CustomPieChartLegend = ({ payload }) => {
+  const CustomPieChartLegend = ({ payload }: { payload?: any[] }) => {
     return (
       <ul className="space-y-2">
-        {payload.map((entry, index) => (
+        {payload.map((entry: any, index: number) => (
           <li key={`item-${index}`} className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="h-3 w-3 rounded-full" style={{ backgroundColor: entry.color }} />
               <span className="text-sm font-medium">{entry.name}: {entry.value}%</span>
-            </div>
-            <div className="text-right">
-              <p className="text-sm">₹{entry.payload.amount}</p>
-              <p className="text-xs text-muted-foreground">{entry.payload.kwh} kWh</p>
             </div>
           </li>
         ))}
@@ -87,50 +84,49 @@ const Analytics = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Weekly Usage</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Consumption</CardTitle>
             <BarChart2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{weeklyUsage.toFixed(1)} kWh</div>
+            <div className="text-2xl font-bold">{typeof summary.totalConsumption === 'number' ? summary.totalConsumption.toFixed(1) : 'N/A'} kWh</div>
             <p className="text-xs text-muted-foreground mt-1">
-              <TrendingUp className="h-3 w-3 inline-block text-green-500 mr-1" /> {weeklyUsageChange}% from last week
+              <TrendingUp className="h-3 w-3 inline-block text-green-500 mr-1" /> {typeof summary.averageDaily === 'number' ? summary.averageDaily.toFixed(1) : 'N/A'} kWh average daily
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Weekly Cost</CardTitle>
+            <CardTitle className="text-sm font-medium">Cost Savings</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{weeklyCost}</div>
-            <p className="text-xs text-muted-foreground mt-1">₹{avgDailyCost} per day average</p>
+            <div className="text-2xl font-bold">₹{typeof summary.costSavings === 'number' ? summary.costSavings.toFixed(0) : 'N/A'}</div>
+            <p className="text-xs text-muted-foreground mt-1">compared to last month</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Trend</CardTitle>
+            <CardTitle className="text-sm font-medium">Peak Demand</CardTitle>
             <CalendarDays className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{monthlyTrendValue}</div>
+            <div className="text-2xl font-bold">{typeof summary.peakDemand === 'number' ? summary.peakDemand.toFixed(1) : 'N/A'} kW</div>
             <p className="text-xs text-muted-foreground mt-1">
-              <TrendingUp className="h-3 w-3 inline-block text-red-500 mr-1" /> {monthlyTrendChange}% vs last month
+              Highest usage recorded this month
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Efficiency Score</CardTitle>
+            <CardTitle className="text-sm font-medium">Average Daily Cost</CardTitle>
             <Percent className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{efficiencyScore}%</div>
-            <Progress value={efficiencyScore} className="h-2 mt-2" />
-            <p className="text-xs text-muted-foreground mt-1">Based on optimal usage patterns</p>
+            <div className="text-2xl font-bold">₹{typeof summary.averageDaily === 'number' ? (summary.averageDaily * 6).toFixed(0) : 'N/A'}</div>
+            <p className="text-xs text-muted-foreground mt-1">Based on daily consumption</p>
           </CardContent>
         </Card>
       </div>
@@ -153,19 +149,15 @@ const Analytics = () => {
               <div className="h-[300px]">
                 <ChartContainer
                   config={{
-                    "Energy Usage": {
-                      label: "Energy Usage",
+                    "Daily Usage": {
+                      label: "Daily Usage",
                       color: "hsl(var(--chart-1))",
-                    },
-                    "Cost Breakdown": {
-                      label: "Cost Breakdown",
-                      color: "hsl(var(--chart-2))",
                     },
                   }}
                   className="aspect-video h-[250px] w-full"
                 >
                   <AreaChart
-                    data={usageTrendsData}
+                    data={dailyUsageData}
                     margin={{
                       left: 12,
                       right: 12,
@@ -173,7 +165,7 @@ const Analytics = () => {
                   >
                     <CartesianGrid vertical={false} />
                     <XAxis
-                      dataKey="name"
+                      dataKey="date"
                       tickLine={false}
                       axisLine={false}
                       tickMargin={8}
@@ -190,7 +182,7 @@ const Analytics = () => {
                         if (active && payload && payload.length) {
                           return (
                             <div className="rounded-lg border bg-background p-2 text-sm shadow-sm">
-                              <p className="font-medium">{payload[0].payload.name}</p>
+                              <p className="font-medium">{payload[0].payload.date}</p>
                               {payload.map((item, i) => (
                                 <div key={i} className="flex items-center gap-2">
                                   <span
@@ -208,17 +200,10 @@ const Analytics = () => {
                     />
                     <Area
                       type="monotone"
-                      dataKey="Energy Usage"
+                      dataKey="usage"
                       stackId="1"
-                      stroke="var(--color-Energy-Usage)"
-                      fill="var(--color-Energy-Usage)"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="Cost Breakdown"
-                      stackId="1"
-                      stroke="var(--color-Cost-Breakdown)"
-                      fill="var(--color-Cost-Breakdown)"
+                      stroke="var(--color-Daily-Usage)"
+                      fill="var(--color-Daily-Usage)"
                     />
                   </AreaChart>
                 </ChartContainer>
@@ -248,38 +233,13 @@ const Analytics = () => {
                         dataKey="value"
                       >
                         {deviceUsageData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                          <Cell key={`cell-${index}`} fill={["#EF4444", "#F97316", "#F59E0B", "#10B981", "#3B82F6"][index % 5]} />
                         ))}
                       </Pie>
-                      <Tooltip
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            return (
-                              <div className="rounded-lg border bg-background p-2 text-sm shadow-sm">
-                                <p className="font-medium">{payload[0].name}: {payload[0].value}%</p>
-                                <p className="text-xs text-muted-foreground">₹{payload[0].payload.amount} ({payload[0].payload.kwh} kWh)</p>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
+                      <Legend content={<CustomPieChartLegend />} layout="vertical" align="right" verticalAlign="middle" />
+                      <Tooltip formatter={(value, name, props) => [`${value}%`, name]} />
                     </PieChart>
                   </ResponsiveContainer>
-                </div>
-                <div className="grid grid-cols-1 gap-2 min-w-[200px]">
-                  {deviceUsageData.map((entry, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="h-3 w-3 rounded-full" style={{ backgroundColor: entry.color }} />
-                        <span className="text-sm font-medium">{entry.name}</span>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm">₹{entry.amount}</p>
-                        <p className="text-xs text-muted-foreground">{entry.kwh} kWh</p>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </div>
             </CardContent>
@@ -290,24 +250,25 @@ const Analytics = () => {
         <TabsContent value="tariff-breakdown">
           <Card>
             <CardHeader>
-              <CardTitle>Weekly Tariff Distribution</CardTitle>
+              <CardTitle>Tariff Breakdown</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer>
                   <BarChart
                     data={tariffDistributionData}
                     margin={{
-                      top: 5,
+                      top: 20,
                       right: 30,
                       left: 20,
                       bottom: 5,
                     }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
-                    <YAxis label={{ value: 'Tariff Rate (₹)', angle: -90, position: 'insideLeft' }} />
-                    <Tooltip />
+                    <YAxis />
+                    <Tooltip formatter={(value) => `${value}%`} />
+                    <Legend />
                     <Bar dataKey="value" fill="#8884d8" />
                   </BarChart>
                 </ResponsiveContainer>

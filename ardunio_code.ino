@@ -82,7 +82,7 @@ float calculateRMS(int sensorPin, float calibrationFactor) {
 }
 
 void updateDisplay(float voltage, float current, float power) {
-  tft.clear();
+  tft.clear(); // Clear the entire screen
   
   // Create display buffer
   char buffer[32];
@@ -92,7 +92,7 @@ void updateDisplay(float voltage, float current, float power) {
   tft.drawText(0, 0, buffer, COLOR_CYAN);
   
   // Current display
-  snprintf(buffer, sizeof(buffer), "Current: %.2f A", current);
+  snprintf(buffer, sizeof(buffer), "Current: %.2f mA", current * 1000);
   tft.drawText(0, 30, buffer, COLOR_YELLOW);
   
   // Power display

@@ -82,11 +82,15 @@ const Index = () => {
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{currentUsage.toFixed(2)} kW</div>
+            <div className="text-2xl font-bold">
+              {typeof currentUsage === 'number' ? 
+                (currentUsage < 1 ? `${(currentUsage * 1000).toFixed(2)} mW` : `${currentUsage.toFixed(2)} W`)
+                : 'N/A'}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
               <span className="text-green-500">●</span> Off-Peak Rate ₹3.5/kWh
             </p>
-            <p className="text-xs text-muted-foreground">₹{ (currentUsage * 3.5).toFixed(2) }/hour</p>
+            <p className="text-xs text-muted-foreground">₹{ typeof currentUsage === 'number' ? ((currentUsage / 1000) * 3.5).toFixed(2) : 'N/A' }/hour</p>
             <p className="text-xs text-muted-foreground mt-2">Last updated: {new Date().toLocaleTimeString()}</p>
           </CardContent>
         </Card>
@@ -113,7 +117,7 @@ const Index = () => {
             </svg>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{typeof currentCurrent === 'number' ? currentCurrent.toFixed(2) : 'N/A'} mA</div>
+            <div className="text-2xl font-bold">{typeof currentCurrent === 'number' ? currentCurrent.toFixed(2) : 'N/A'} A</div>
             <p className="text-xs text-muted-foreground mt-1">Live reading from sensor</p>
             <p className="text-xs text-muted-foreground mt-2">Last updated: {new Date().toLocaleTimeString()}</p>
           </CardContent>
