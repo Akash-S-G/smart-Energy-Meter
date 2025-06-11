@@ -1,13 +1,27 @@
 const express = require('express');
 const cors = require('cors');
-const { SerialPort } = require('serialport');
-const { ReadlineParser } = require('@serialport/parser-readline');
+const os = require('os');
 
 const app = express();
 const PORT = 3000;
 
-app.use(cors());
+// Enable CORS for all routes with more permissive settings
+app.use(cors({
+  origin: '*', // Allow all origins
+  methods: ['GET', 'POST', 'OPTIONS'], // Allow these methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allow these headers
+  credentials: true // Allow credentials
+}));
+
 app.use(express.json());
+
+// Add request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.log('Request Headers:', req.headers);
+  console.log('Request Body:', req.body);
+  next();
+});
 
 // In-memory store for sensor data
 let sensorData = [];
@@ -18,102 +32,70 @@ let currentCurrentRMS = 0; // in Amps
 let projectedMonthlyCost = 10000; // in INR
 let aiSuggestions = [];
 
-// List available ports
-SerialPort.list().then(ports => {
-  console.log('Available ports:');
-  ports.forEach(port => {
-    console.log(`- ${port.path} (${port.manufacturer || 'Unknown manufacturer'})`);
-  });
-}).catch(err => {
-  console.error('Error listing ports:', err);
-});
-
-// Configure serial port with error handling
-let port;
-try {
-  const portConfig = {
-    path: 'COM17',
-    baudRate: 9600,
-    autoOpen: false,
-    lock: false // Try without port locking
-  };
-
-  port = new SerialPort(portConfig);
-
-  // Handle port errors
-  port.on('error', (err) => {
-    console.error('Serial port error:', err);
-    if (err.message.includes('Access denied')) {
-      console.log('Port is locked. Attempting to close and reopen...');
-      port.close((err) => {
-        if (err) {
-          console.error('Error closing port:', err);
-        } else {
-          setTimeout(() => {
-            port.open((err) => {
-              if (err) {
-                console.error('Error reopening port:', err);
-              } else {
-                console.log('Port reopened successfully');
-              }
-            });
-          }, 2000);
+// Function to get local IP address
+function getLocalIP() {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            // Skip over non-IPv4 and internal (i.e. 127.0.0.1) addresses
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;
+            }
         }
+    }
+    return 'localhost';
+}
+
+// Endpoint to receive sensor data from ESP32
+app.post('/api/sensor-data', (req, res) => {
+  try {
+    console.log('Received sensor data request');
+    console.log('Request body:', req.body);
+    
+    const { voltage_rms, current_rms, power } = req.body;
+    
+    if (!voltage_rms || !current_rms || !power) {
+      console.error('Missing required fields in request');
+      return res.status(400).json({ 
+        status: 'error', 
+        message: 'Missing required fields',
+        received: req.body 
       });
     }
-  });
+    
+    const timestamp = new Date().toISOString();
+    const dataPoint = { timestamp, voltage_rms, current_rms, power };
+    sensorData.push(dataPoint);
 
-  // Open the port with retry logic
-  const openPort = (retries = 3) => {
-    port.open((err) => {
-      if (err) {
-        console.error(`Error opening port (attempts left: ${retries}):`, err);
-        if (retries > 0) {
-          console.log('Retrying in 2 seconds...');
-          setTimeout(() => openPort(retries - 1), 2000);
-        }
-      } else {
-        console.log('Port opened successfully');
-      }
-    });
-  };
-
-  openPort();
-
-  const parser = port.pipe(new ReadlineParser({ delimiter: '\r\n' }));
-
-  // Read data from serial port
-  parser.on('data', (data) => {
-    try {
-      const sensorReading = JSON.parse(data);
-      const { voltage_rms, current_rms, power } = sensorReading;
-      
-      const timestamp = new Date().toISOString();
-      const dataPoint = { timestamp, voltage_rms, current_rms, power };
-      sensorData.push(dataPoint);
-
-      // Keep a manageable size for sensorData
-      if (sensorData.length > 100) {
-        sensorData = sensorData.slice(-100);
-      }
-
-      currentPowerConsumption = power;
-      currentVoltageRMS = voltage_rms;
-      currentCurrentRMS = current_rms;
-
-      // Accumulate total energy for today
-      totalEnergyToday += power * (1 / 3600); // Assuming data comes every second
-
-      updateAILogic();
-      console.log('Received sensor data:', dataPoint);
-    } catch (error) {
-      console.error('Error parsing serial data:', error);
+    // Keep a manageable size for sensorData
+    if (sensorData.length > 100) {
+      sensorData = sensorData.slice(-100);
     }
-  });
 
-} catch (error) {
-  console.error('Error creating serial port:', error);
-}
+    currentPowerConsumption = power;
+    currentVoltageRMS = voltage_rms;
+    currentCurrentRMS = current_rms;
+
+    // Accumulate total energy for today
+    totalEnergyToday += power * (1 / 3600); // Assuming data comes every second
+
+    updateAILogic();
+    console.log('Successfully processed sensor data:', dataPoint);
+    
+    res.json({ 
+      status: 'success', 
+      message: 'Data received',
+      timestamp: timestamp
+    });
+  } catch (error) {
+    console.error('Error processing sensor data:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: 'Error processing data',
+      error: error.message 
+    });
+  }
+});
 
 // Helper function to simulate AI logic based on real-time data
 const updateAILogic = () => {
@@ -323,6 +305,14 @@ app.get('/api/billing-data', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`Backend server running on http://localhost:${PORT}`);
+// Start the server
+const serverIP = getLocalIP();
+app.listen(PORT, '0.0.0.0', () => {
+  console.log('=================================');
+  console.log(`Server is running on:`);
+  console.log(`- Local:   http://localhost:${PORT}`);
+  console.log(`- Network: http://${serverIP}:${PORT}`);
+  console.log('=================================');
+  console.log('\nUse the Network URL above in your ESP32 code');
+  console.log('Server is listening on all network interfaces');
 }); 
